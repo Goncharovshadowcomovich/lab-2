@@ -1,0 +1,398 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_NAME 20
+#define MAX_PERIMETRE 500
+#define DATE_COLOUR 8
+#define MAX "20220101"
+
+union Secondary {
+	char colour[DATE_COLOUR + 1];
+	int perimetre;
+};
+
+struct figures {
+	int square;
+	char name[MAX_NAME];
+	Secondary SCNDR;
+	bool isColour;
+};
+
+void menu(figures*, int*);
+figures* input(figures*, int*);
+int strcmpIgnoreCase(const char*, const char*);
+void output(figures*, int, int);
+void deleteOneStructure(figures*, int, int*);
+void searchOrDelete(figures*, int*, char);
+void printsubjectsWithLongestLifetime(figures*, int);
+void deletesubjectsWithCertainDateReceipt(figures*, int*);
+void removeMultipleStructures(figures*, int*, int*, int);
+void scanfDateOrInt(figures*);
+
+int main() {
+	int size = 0;
+	figures* subjects = (figures*)calloc(0, sizeof(figures));
+	subjects = input(subjects, &size);
+	menu(subjects, &size);
+
+	free(subjects);
+
+}
+
+figures* input(figures* subjects, int* sizeArrayOfsubjects)
+{
+	printf("						Enter \"stop\" in field name to exit\n");
+	int i = *sizeArrayOfsubjects;
+	int buffer;
+	do {
+
+		if (!(subjects = (figures*)realloc(subjects, (*sizeArrayOfsubjects = i + 1) * sizeof(figures))))
+		{
+			printf("Can't add one more structure");
+			*sizeArrayOfsubjects = i;
+			return subjects;
+		}
+		//--------------Entering a name-----------------------------
+		printf("  Enter name of subjects %d (lower than %d letters) ", *sizeArrayOfsubjects, MAX_NAME);
+		rewind(stdin);
+		gets_s(subjects[i].name, MAX_NAME);
+		if (strcmpIgnoreCase(subjects[i].name, "stop") == 0)
+		{
+			if (i == 0)continue;
+			*sizeArrayOfsubjects = i;
+			return subjects;
+		}
+		//--------------Entering of square--------------------
+		printf("  Enter square of subjects ");
+		while (!scanf_s("%d", &subjects[i].square) || subjects[i].square < 0) {
+			printf("Try again");
+			rewind(stdin);
+		}
+		//--------------Entering of colour or perimetre------
+		printf("  char or int ");
+		scanfDateOrInt(&subjects[i]);
+		/*while (!scanf_s("%d", &buffer) || buffer < 0) {
+			printf("Try again");
+			rewind(stdin);
+		}
+
+		if (buffer > MAX_PERIMETRE) {
+			subjects[i].SCNDR.colour[DATE_COLOUR] = '\0';
+			for (int z = 0; z < DATE_COLOUR; z++)
+			{
+				subjects[i].SCNDR.colour[DATE_COLOUR - 1 - z] = (buffer % 10) + '0';
+				buffer /= 10;
+			}
+			subjects[i].isColour = true;
+		}
+		else {
+			subjects[i].SCNDR.perimetre = buffer;
+			subjects[i].isColour = false;
+		}*/
+		i++;
+	} while (1);
+}
+
+int strcmpIgnoreCase(const char* string1, const char* string2) {
+	while (*string2 && *string1 && (*string1 == *string2 || *string1 == *string2 - 32 || *string1 == *string2 + 32)) ++string1, ++string2;
+	return (*string1 > * string2 ? 1 : (*string1 < *string2 ? -1 : 0));
+}
+
+void output(figures* subjects, int start, int finish)
+{
+	printf("|No||Num||           Name     || Colour or Perimetre|\n");
+	while (start < finish)
+	{
+		printf("|%2d|", start + 1);
+		printf("|%3d|", subjects[start].square);
+		printf("|%20s|", subjects[start].name);
+		if (subjects[start].isColour) printf("|   %c%c%c%c.%c%c.%c%c    |", subjects[start].SCNDR.colour[0], subjects[start].SCNDR.colour[1],
+			subjects[start].SCNDR.colour[2], subjects[start].SCNDR.colour[3], subjects[start].SCNDR.colour[4], subjects[start].SCNDR.colour[5],
+			subjects[start].SCNDR.colour[6], subjects[start].SCNDR.colour[7]);
+		else printf("|    %6d       |", subjects[start].SCNDR.perimetre);
+		printf("\n--------------------------------------------------\n");
+		start++;
+	}
+}
+
+void deleteOneStructure(figures* subjects, int start, int* sizeArrayOfsubjects)
+{
+	while (start + 1 < *sizeArrayOfsubjects)
+	{
+		subjects[start] = subjects[start + 1];
+		start++;
+	}
+	(*sizeArrayOfsubjects)--;
+	subjects = (figures*)realloc(subjects, (*sizeArrayOfsubjects) * sizeof(figures));
+}
+
+void printsubjectsWithLongestLifetime(figures* subjects, int sizeArrayOfsubjects)
+{
+	int i = 0;
+	int buffer;
+	while (subjects[i].isColour)i++;
+	buffer = subjects[i].SCNDR.perimetre;
+	for (++i; i < sizeArrayOfsubjects; i++)
+	{
+		if (subjects[i].SCNDR.perimetre > buffer && subjects[i].isColour == false)
+		{
+			buffer = subjects[i].SCNDR.perimetre;
+		}
+
+	}
+	for (i = 0; i < sizeArrayOfsubjects; i++)
+	{
+		if (subjects[i].SCNDR.perimetre == buffer && subjects[i].isColour == false)
+		{
+			output(subjects, i, i + 1);
+		}
+
+	}
+
+}
+
+void deletesubjectsWithCertainDateReceipt(figures* subjects, int* sizeArrayOfsubjects)
+{
+	int* buffer = (int*)calloc(*sizeArrayOfsubjects, sizeof(int));
+	char bufferDate[DATE_COLOUR + 1];
+	int* whattStringIsDelete = (int*)calloc(*sizeArrayOfsubjects, sizeof(int));
+	int wasThereOutput = 0;
+
+	printf("Enter date char");
+	rewind(stdin);
+	gets_s(bufferDate, DATE_COLOUR + 1);
+
+	for (int z = 0; z <= *sizeArrayOfsubjects; z++) {
+		if (!strcmpIgnoreCase(subjects[z].SCNDR.colour, bufferDate)) {
+			output(subjects, z, z + 1);
+			wasThereOutput++;
+			whattStringIsDelete[z]++;
+		}
+	}
+	if (!wasThereOutput)printf("Nothing found for the specified parameter");
+	else removeMultipleStructures(subjects, sizeArrayOfsubjects, whattStringIsDelete, wasThereOutput);
+}
+
+void menu(figures* storages, int* sizeArrayOfsubjects) {
+	char buffer;
+	do {
+		system("CLS");
+		printf("Choose one of these options by entering their's first letter\nAdditional input\nOutput\nSearch\nDeleting\nz-search\nx-deleting");
+		rewind(stdin);
+		buffer = getchar();
+		if (buffer >= 'a' && buffer <= 'z')buffer += ('A' - 'a');
+		switch (buffer)
+		{
+		case 'A': input(storages, sizeArrayOfsubjects);
+			break;
+		case 'O': output(storages, 0, *sizeArrayOfsubjects);
+			break;
+		case 'S': printsubjectsWithLongestLifetime(storages, *sizeArrayOfsubjects);
+			break;
+		case 'D': deletesubjectsWithCertainDateReceipt(storages, sizeArrayOfsubjects);
+			break;
+		case 'Z': searchOrDelete(storages, sizeArrayOfsubjects, 'f');
+			break;
+		case 'X': searchOrDelete(storages, sizeArrayOfsubjects, 't');
+			break;
+		default: break;
+
+		}
+		printf("Do you want to do anything else?(Y/N)");
+		rewind(stdin);
+		buffer = getchar();
+		if (buffer != 'y' && buffer != 'Y') return;
+	} while (1);
+}
+
+void removeMultipleStructures(figures* subjects, int* sizeArrayOfsubjects, int* possibilityToDeleteStructure, int amountOfStructuresToDelete)
+{
+	int buffer;
+	int bufferSize = *sizeArrayOfsubjects;
+	do {
+		printf("\nIf you want to delete all structures enter -1, else enter number of structure (exit -2) ");
+		while (!scanf_s("%d", &buffer) || buffer > * sizeArrayOfsubjects || buffer < -2)
+		{
+			rewind(stdin);
+			printf("Try again");
+		}
+		switch (buffer)
+		{
+		case -1:
+			for (int i = 0; i < bufferSize; i++)
+			{
+				if (possibilityToDeleteStructure[i])
+				{
+					deleteOneStructure(subjects, i, sizeArrayOfsubjects);
+				}
+			}
+			return;
+		case -2:return;
+		default:
+			buffer--;
+			if (!possibilityToDeleteStructure[buffer] || buffer >= *sizeArrayOfsubjects || buffer < 0)
+			{
+				printf("You entered wrong number of structure, please, try again ");
+				buffer = -3;
+			}
+			else
+			{
+				deleteOneStructure(subjects, buffer, sizeArrayOfsubjects);
+				amountOfStructuresToDelete--;
+			}
+			break;
+		}
+		if (buffer != -3 && amountOfStructuresToDelete)
+		{
+			printf("If you want to repeat deleting, input -3(exit Any other number)");
+			if (!scanf_s("%d", &buffer))printf("Try again");
+		}
+	} while (buffer == -3);
+}
+
+void scanfDateOrInt(figures* animal)
+{
+	int repeater = 0;
+	char string[DATE_COLOUR + 1];
+	int i = -1;
+	int buffer = 0;
+	do {
+		i = -1;
+		buffer = 0;
+		rewind(stdin);
+		do {
+			i++;
+			string[i] = getchar();
+		} while (i < DATE_COLOUR && string[i] <= '9' && string[i] >= '0' && string[i] != '\n');
+		if ((string[i] > '9' || string[i] < '0') && string[i] != '\n')
+		{
+			repeater = 1;
+			printf("You enter wrong colour or perimetre, try again");
+		}
+		else
+		{
+			if (string[i] == '\n') string[i] = '\0';
+			i = 0;
+			while (string[i] >= '0' && string[i] <= '9')
+			{
+				buffer = buffer * 10 + (string[i] - '0');
+				i++;
+			}
+			if (buffer > MAX_PERIMETRE) {
+				if (string[0] < '3')
+				{
+					if (string[4] == '0' || (string[4] == '1' && string[5] < '3'))
+					{
+						if ((string[6] == '3' && string[7] < '2') || string[6] < '3') {
+							(*animal).isColour = true;
+							for (i = 0; i <= DATE_COLOUR; i++)
+								(*animal).SCNDR.colour[i] = string[i];
+							return;
+						}
+					}
+				}
+				printf("\nYou enter very big number, please try number <= %s\n", MAX);
+				repeater = 1;
+			}
+			else {
+				animal->SCNDR.perimetre = buffer;
+				animal->isColour = false;
+			}
+		}
+	} while (repeater);
+}
+
+void searchOrDelete(figures* subjects, int* sizeArrayOfsubjects, char isItDeleting)
+{
+	system("CLS");
+	int repeater;
+	bool bufisColour;
+	char buffer;
+	char substring[MAX_NAME];
+	int subInt, wasThereOutput = 0;
+	int* whattStringIsDelete = (int*)calloc(*sizeArrayOfsubjects, sizeof(int));
+	do {
+		if (isItDeleting != 't')printf("Select the field to search for\nAmount - a\nDate or perimetre - d\nName - n\n");
+		else printf("Select the field to delete for\nAmount - a\nDate or perimetre - d\nName - n\n");
+		rewind(stdin);
+		buffer = getchar();
+		if (buffer >= 'A' && buffer <= 'Z')buffer -= ('A' - 'a');
+		switch (buffer)
+		{
+		case 'a':
+			printf("Input amount value ");
+			while (!scanf_s("%d", &subInt));
+			for (int z = 0; z <= *sizeArrayOfsubjects; z++) {
+				if (subjects[z].square == subInt) {
+					output(subjects, z, z + 1);
+					wasThereOutput++;
+					if (isItDeleting == 't')whattStringIsDelete[z]++;
+				}
+			}
+			if (!wasThereOutput)printf("Nothing found for the specified parameter");
+			else if (isItDeleting == 't')removeMultipleStructures(subjects, sizeArrayOfsubjects, whattStringIsDelete, wasThereOutput);
+			break;
+		case 'd':
+			printf("Input date (char) or perimetre: ");
+			while (!scanf_s("%d", &subInt) || subInt < 0) {
+				printf("Try again");
+				rewind(stdin);
+			}
+
+			if (subInt > MAX_PERIMETRE) {
+				substring[DATE_COLOUR] = '\0';
+				for (int z = 0; z < DATE_COLOUR; z++)
+				{
+					substring[DATE_COLOUR - 1 - z] = (subInt % 10) + '0';
+					subInt /= 10;
+				}
+				bufisColour = true;
+			}
+			else {
+				bufisColour = false;
+			}
+			for (int z = 0; z <= *sizeArrayOfsubjects; z++) {
+				if (bufisColour)
+				{
+					if (!strcmpIgnoreCase(subjects[z].SCNDR.colour, substring)) {
+						output(subjects, z, z + 1);
+						wasThereOutput++; if (isItDeleting == 't')whattStringIsDelete[z]++;
+					}
+				}
+				else {
+					if (subInt == subjects[z].SCNDR.perimetre) {
+						output(subjects, z, z + 1);
+						wasThereOutput++; if (isItDeleting == 't')whattStringIsDelete[z]++;
+					}
+				}
+			}
+			if (!wasThereOutput)printf("Nothing found for the specified parameter");
+			else if (isItDeleting == 't')removeMultipleStructures(subjects, sizeArrayOfsubjects, whattStringIsDelete, wasThereOutput);
+			break;
+		case 'n':
+			printf("Input name of subjects: ");
+			rewind(stdin);
+			gets_s(substring, MAX_NAME);
+			for (int z = 0; z <= *sizeArrayOfsubjects; z++) {
+				if (!strcmpIgnoreCase(subjects[z].name, substring))
+				{
+					output(subjects, z + 1, z);
+					wasThereOutput++;
+					if (isItDeleting == 't')whattStringIsDelete[z]++;
+				}
+			}
+			if (!wasThereOutput)printf("Nothing found for the specified parameter");
+			else if (isItDeleting == 't')removeMultipleStructures(subjects, sizeArrayOfsubjects, whattStringIsDelete, wasThereOutput);
+			break;
+		default: repeater = 1;
+			break;
+		}
+		if (isItDeleting != 't')printf("\nDo you want to repeat searching? Enter Y/N\n");
+		else printf("\nDo you want to repeat deleting? Enter Y/N\n");
+		rewind(stdin);
+		buffer = getchar();
+		if (buffer >= 'A' && buffer <= 'Z')buffer -= ('A' - 'a');
+		if (buffer == 'y')repeater = 1;
+		else repeater = 0;
+	} while (repeater);
+}
